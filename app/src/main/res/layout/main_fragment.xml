@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="20sp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_height="wrap_content">
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/app_stream_music_btn"
+        android:paddingLeft="50sp"
+        android:paddingRight="50sp"
+        android:background="@drawable/main_button_style"
+        android:layout_centerHorizontal="true"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:text="Stream" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:background="@drawable/main_button_style"
+        android:id="@+id/app_connect_to_host_btn"
+        android:paddingLeft="50sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:paddingRight="50sp"
+        android:layout_below="@id/app_stream_music_btn"
+        android:text="Connect" />
+    </RelativeLayout>
+</RelativeLayout>

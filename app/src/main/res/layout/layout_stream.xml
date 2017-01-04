@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_marginLeft="10sp" android:layout_marginRight="10sp"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp"
+        android:background="@drawable/layout_border"
+        android:id="@+id/layout_stream_step1_rl"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/step11"
+            android:id="@+id/layout_stream_step1tv"
+            android:textSize="16sp"
+            android:gravity="center"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Activate"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="10sp"
+            android:id="@+id/layout_stream_step1btn"
+            android:layout_below="@id/layout_stream_step1tv"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/main_button_style"/>
+    </RelativeLayout>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:background="@drawable/layout_border"
+        android:id="@+id/layout_stream_step2_rl"
+        android:layout_below="@id/layout_stream_step1_rl"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/step21"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:id="@+id/layout_stream_step2tv"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/main_button_style"
+            android:text="Load"
+            android:textColor="#FFFFFF"
+            android:id="@+id/layout_stream_step2btn"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/layout_stream_step2tv"
+            android:layout_marginTop="10sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_below="@id/layout_stream_step2_rl"
+        android:layout_marginTop="10sp"
+        android:id="@+id/layout_stream_play_pause_rl"
+        android:background="@drawable/layout_border"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:layout_width="80sp"
+            android:layout_height="80sp"
+            style="@style/media_player_button"
+            android:id="@+id/layout_stream_play_pause"
+            android:layout_centerHorizontal="true"/>
+    </RelativeLayout>
+</RelativeLayout>

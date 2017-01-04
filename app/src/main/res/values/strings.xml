@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Play Like Boss</string>
+    <string name="step11">Step 1 - Switch on the Portable Hotspot by clicking the button below</string>
+    <string name="step12">Cool!</string>
+    <string name="step21">Step 2 - Load a song for other devices to get synced</string>
+    <string name="step22">Nice!</string>
+
+    <string name="cstep11">Waiting for a device to connect to..</string>
+</resources>

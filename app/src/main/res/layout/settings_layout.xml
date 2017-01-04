@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:padding="20sp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/settings_ssid_tv"
+        android:text="Wifi Hotspot Name"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/settings_ssid_tv"
+        android:layout_marginTop="10sp"
+        android:id="@+id/settings_ssid_et"
+        android:layout_marginBottom="10sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/settings_key_tv"
+        android:text="Password"
+
+        android:layout_below="@id/settings_ssid_et"/>
+
+    <LinearLayout
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:id="@+id/settings_pwd_ll"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/settings_key_tv"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <EditText
+            android:layout_width="0sp"
+            android:layout_weight="4"
+            android:layout_height="wrap_content"
+            android:id="@+id/settings_key_et"
+            android:inputType="textPassword"
+            android:layout_below="@id/settings_key_tv"/>
+
+        <CheckBox
+            android:layout_width="0sp"
+            android:layout_weight="3"
+            android:layout_height="wrap_content"
+            android:text="Show Password"
+            android:id="@+id/settings_key_toggle"
+            android:layout_toRightOf="@id/settings_key_et" />
+    </LinearLayout>
+
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        android:layout_marginTop="10sp"
+        android:id="@+id/settings_save_btn"
+        android:layout_below="@id/settings_pwd_ll"
+        android:layout_centerHorizontal="true"/>
+</RelativeLayout>
