@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
@@ -53,7 +54,7 @@ public class StreamSong extends AppCompatActivity {
     private Button playPauseButton;
     ArrayList<Socket> openClientSockets;
     ArrayList<DataOutputStream> openDOS;
-
+    MediaPlayer mediaPlayer;
     final String TAG = "StreamSongActivity";
 
     @Nullable
@@ -119,6 +120,8 @@ public class StreamSong extends AppCompatActivity {
 
         ((RelativeLayout) findViewById(R.id.layout_stream_step2_rl)).setVisibility(View.GONE);
         ((RelativeLayout) findViewById(R.id.layout_stream_play_pause_rl)).setVisibility(View.GONE);
+
+        mediaPlayer = new MediaPlayer();
     }
 
     private boolean isWifiHotspotEnabled() {
@@ -269,6 +272,12 @@ public class StreamSong extends AppCompatActivity {
     }
 
     private void loadFileToClients(final File file) {
+        try {
+            mediaPlayer.setDataSource(file.getAbsolutePath());
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         openClientSockets = new ArrayList<>();
         openDOS = new ArrayList<>();
         Thread clientListenerThread = new Thread(new Runnable() {
@@ -297,72 +306,75 @@ public class StreamSong extends AppCompatActivity {
                         playPauseButton.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                for (DataOutputStream dos : openDOS) {
-                                    try {
-                                        log ("sending message to client");
+                                try {
+                                    for (DataOutputStream dos : openDOS) {
+                                        log("sending message to client");
                                         dos.writeUTF("play");
+                                        mediaPlayer.start();
                                         dos.flush();
-                                        log ("message sent to client");
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
+                                        log("message sent to client");
                                     }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
                                 }
                             }
-                        });
-                    }
-                });
-            }
-        }).start();
-    }
-
-    class NewClientConnected implements Runnable {
-        Socket clientSocket;
-        OutputStream socketOutputStream;
-        DataOutputStream socketDataOutputStream;
-        File songFile;
-
-        NewClientConnected(Socket socket, File songFile) {
-            this.clientSocket = socket;
-            this.songFile = songFile;
-            try {
-                socketOutputStream = socket.getOutputStream();
-                socketDataOutputStream = new DataOutputStream(new BufferedOutputStream(socketOutputStream));
-                openDOS.add(socketDataOutputStream);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            log("new thread created for client - " + clientSocket.getInetAddress().toString());
-        }
-
-        @Override
-        public void run() {
-            try {
-                log("sending song to client - " + clientSocket.getInetAddress().toString());
-
-                InputStream fileInputStream = new FileInputStream(songFile);
-                socketDataOutputStream.writeLong(songFile.length());
-                Thread.sleep(50);
-                byte[] byteBuffer = new byte[16 * 1024];
-                int count;
-                while ((count = fileInputStream.read(byteBuffer)) > 0) {
-                    socketDataOutputStream.write(byteBuffer, 0, count);
-
+                        }
+                    );
                 }
-                log("song sent to client - " + clientSocket.getInetAddress().toString());
-                socketDataOutputStream.flush();
-                log("sending a message to client - " + clientSocket.getInetAddress().toString());
-                //socketDataOutputStream.writeUTF("play");
-                //socketDataOutputStream.flush();
-                log("message sent to client - " + clientSocket.getInetAddress().toString());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            });
+        }
+    }).start();
+}
+
+class NewClientConnected implements Runnable {
+    Socket clientSocket;
+    OutputStream socketOutputStream;
+    DataOutputStream socketDataOutputStream;
+    File songFile;
+
+    NewClientConnected(Socket socket, File songFile) {
+        this.clientSocket = socket;
+        this.songFile = songFile;
+        try {
+            socketOutputStream = socket.getOutputStream();
+            socketDataOutputStream = new DataOutputStream(new BufferedOutputStream(socketOutputStream));
+            openDOS.add(socketDataOutputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        log("new thread created for client - " + clientSocket.getInetAddress().toString());
+    }
+
+    @Override
+    public void run() {
+        try {
+            log("sending song to client - " + clientSocket.getInetAddress().toString());
+
+            InputStream fileInputStream = new FileInputStream(songFile);
+            socketDataOutputStream.writeLong(songFile.length());
+            Thread.sleep(50);
+            byte[] byteBuffer = new byte[16 * 1024];
+            int count;
+            while ((count = fileInputStream.read(byteBuffer)) > 0) {
+                socketDataOutputStream.write(byteBuffer, 0, count);
+
             }
+            log("song sent to client - " + clientSocket.getInetAddress().toString());
+            socketDataOutputStream.flush();
+            log("sending a message to client - " + clientSocket.getInetAddress().toString());
+            //socketDataOutputStream.writeUTF("play");
+            //socketDataOutputStream.flush();
+            log("message sent to client - " + clientSocket.getInetAddress().toString());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
+}
 
     void log(String message) {
         Log.i(TAG, message);
