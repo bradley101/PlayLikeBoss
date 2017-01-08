@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
@@ -23,8 +24,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +39,7 @@ import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+
 
 /**
  * Created by bradley on 21-12-2016.
@@ -46,7 +52,10 @@ public class StreamSong extends AppCompatActivity {
     private Button step2Button;
     private Button playPauseButton;
     ArrayList<Socket> openClientSockets;
+    ArrayList<DataOutputStream> openDOS;
+
     final String TAG = "StreamSongActivity";
+
     @Nullable
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,30 +97,6 @@ public class StreamSong extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 showFileChooser();
-            }
-        });
-
-        playPauseButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Socket s;
-                        PrintWriter writer;
-                        for (int i = 0 ; i < openClientSockets.size() ; i += 1) {
-                            s = openClientSockets.get(i);
-                            try {
-                                writer = new PrintWriter(s.getOutputStream());
-                                writer.print("play");
-                                writer.flush();
-                                writer.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }).start();
             }
         });
     }
@@ -260,7 +245,7 @@ public class StreamSong extends AppCompatActivity {
         Intent fileChooserIntent = new Intent(Intent.ACTION_GET_CONTENT);
         fileChooserIntent.setType("*/*");
         fileChooserIntent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult (fileChooserIntent, 10);
+        startActivityForResult(fileChooserIntent, 10);
     }
 
     @Override
@@ -270,7 +255,7 @@ public class StreamSong extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 ((RelativeLayout) findViewById(R.id.layout_stream_play_pause_rl)).setVisibility(View.VISIBLE);
                 Cursor cursor = getContentResolver().query(data.getData(),
-                        new String[] {MediaStore.Audio.AudioColumns.DATA},
+                        new String[]{MediaStore.Audio.AudioColumns.DATA},
                         null,
                         null,
                         null
@@ -285,9 +270,7 @@ public class StreamSong extends AppCompatActivity {
 
     private void loadFileToClients(final File file) {
         openClientSockets = new ArrayList<>();
-        String filePath = file.getAbsolutePath();
-        int indexOfDot = filePath.lastIndexOf(".");
-        final String extension = filePath.substring(indexOfDot + 1, indexOfDot + 4);
+        openDOS = new ArrayList<>();
         Thread clientListenerThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -295,38 +278,9 @@ public class StreamSong extends AppCompatActivity {
                     ServerSocket server = new ServerSocket(40404);
                     while (true) {
                         final Socket clientSocket = server.accept();
-
                         log("new client device connected - " + clientSocket.getInetAddress().toString());
-
                         openClientSockets.add(clientSocket);
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    log("sending file to client - " + clientSocket.getInetAddress().toString());
-
-                                    OutputStream outputStream = clientSocket.getOutputStream();
-                                    PrintWriter writer = new PrintWriter(outputStream);
-                                    writer.print(extension);
-//                                    writer.close();
-
-                                    InputStream fileInputStream = new FileInputStream(file);
-
-                                    byte[] byteBuffer = new byte[16 * 1024];
-                                    int count;
-                                    while ((count = fileInputStream.read(byteBuffer)) > 0) {
-                                        outputStream.write(byteBuffer, 0, count);
-                                    }
-
-                                    log("file sent to client - " + clientSocket.getInetAddress().toString());
-
-                                    fileInputStream.close();
-                                    outputStream.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }).start();
+                        new Thread(new NewClientConnected(clientSocket, file)).start();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -334,10 +288,82 @@ public class StreamSong extends AppCompatActivity {
             }
         });
         clientListenerThread.start();
-
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        playPauseButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                for (DataOutputStream dos : openDOS) {
+                                    try {
+                                        log ("sending message to client");
+                                        dos.writeUTF("play");
+                                        dos.flush();
+                                        log ("message sent to client");
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }).start();
     }
 
-    void log (String message) {
+    class NewClientConnected implements Runnable {
+        Socket clientSocket;
+        OutputStream socketOutputStream;
+        DataOutputStream socketDataOutputStream;
+        File songFile;
+
+        NewClientConnected(Socket socket, File songFile) {
+            this.clientSocket = socket;
+            this.songFile = songFile;
+            try {
+                socketOutputStream = socket.getOutputStream();
+                socketDataOutputStream = new DataOutputStream(new BufferedOutputStream(socketOutputStream));
+                openDOS.add(socketDataOutputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            log("new thread created for client - " + clientSocket.getInetAddress().toString());
+        }
+
+        @Override
+        public void run() {
+            try {
+                log("sending song to client - " + clientSocket.getInetAddress().toString());
+
+                InputStream fileInputStream = new FileInputStream(songFile);
+                socketDataOutputStream.writeLong(songFile.length());
+                Thread.sleep(50);
+                byte[] byteBuffer = new byte[16 * 1024];
+                int count;
+                while ((count = fileInputStream.read(byteBuffer)) > 0) {
+                    socketDataOutputStream.write(byteBuffer, 0, count);
+                }
+                log("song sent to client - " + clientSocket.getInetAddress().toString());
+                socketDataOutputStream.flush();
+                log("sending a message to client - " + clientSocket.getInetAddress().toString());
+                //socketDataOutputStream.writeUTF("play");
+                //socketDataOutputStream.flush();
+                log("message sent to client - " + clientSocket.getInetAddress().toString());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    void log(String message) {
         Log.i(TAG, message);
     }
 }

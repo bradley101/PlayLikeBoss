@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,8 +17,11 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,12 +57,12 @@ public class ConnectDevice extends AppCompatActivity {
                 ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
                 if (connectivityManager.getActiveNetworkInfo().isConnected()) {
                     connectStatus.setText("Connected");
-                    doAllTheWork();
                 } else {
                     connectStatus.setText(R.string.cstep11);
                 }
             }
         };
+        doAllTheWork();
     }
 
     @Override
@@ -78,11 +82,7 @@ public class ConnectDevice extends AppCompatActivity {
                 try {
                     Socket clientSocket = new Socket("192.168.43.1", 40404);
                     InputStream inputStream = clientSocket.getInputStream();
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                    String ext = null;
-                    while ((ext = bufferedReader.readLine()) != null) {
-                        break;
-                    }
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -92,10 +92,15 @@ public class ConnectDevice extends AppCompatActivity {
                     });
 
                     byte[] byteBuffer = new byte [16 * 1024];
-                    OutputStream fileOutputStream = new FileOutputStream("song." + ext);
+                    File songFile = new File("/storage/emulated/0/song.mp3");
+                    songFile.createNewFile();
+                    OutputStream fileOutputStream = new FileOutputStream(songFile);
+                    DataInputStream socketDataInputStream = new DataInputStream(new BufferedInputStream(inputStream));
+                    long fileSize = socketDataInputStream.readLong();
                     int count = 0;
-                    while ((count = inputStream.read(byteBuffer)) > 0) {
+                    while (fileSize > 0 && (count = socketDataInputStream.read(byteBuffer, 0, (int) Math.min(byteBuffer.length, fileSize))) > 0) {
                         fileOutputStream.write(byteBuffer, 0, count);
+                        fileSize -= count;
                     }
                     runOnUiThread(new Runnable() {
                         @Override
@@ -104,11 +109,14 @@ public class ConnectDevice extends AppCompatActivity {
                             progressBar.setVisibility(View.GONE);
                         }
                     });
-                    mediaPlayer.setDataSource("song." + ext);
-                    mediaPlayer.prepareAsync();
-                    String s = null;
+                    mediaPlayer.setDataSource(songFile.getAbsolutePath());
+                    mediaPlayer.prepare();
+                    //mediaPlayer.start();
+                    //Thread.sleep(200);
+                    String s;
                     boolean finish = false;
-                    while ((s = bufferedReader.readLine()) != null) {
+                    while ((s = socketDataInputStream.readUTF()) != null) {
+                        log(s);
                         switch (s) {
                             case "pause":
                                 mediaPlayer.pause();
@@ -133,5 +141,9 @@ public class ConnectDevice extends AppCompatActivity {
         });
 
         listenToSongThread.start();
+    }
+
+    void log(String message) {
+        Log.i("CONNECT DEVICE", message);
     }
 }
