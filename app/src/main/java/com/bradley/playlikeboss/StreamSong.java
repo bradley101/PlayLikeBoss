@@ -346,6 +346,7 @@ public class StreamSong extends AppCompatActivity {
                 int count;
                 while ((count = fileInputStream.read(byteBuffer)) > 0) {
                     socketDataOutputStream.write(byteBuffer, 0, count);
+
                 }
                 log("song sent to client - " + clientSocket.getInetAddress().toString());
                 socketDataOutputStream.flush();
